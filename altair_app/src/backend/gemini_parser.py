@@ -6,6 +6,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 class Geminiparser:
     def __init__(self):
         genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+        print(os.getenv("GOOGLE_API_KEY"))
+        #self.model = genai.GenerativeModel("gemini-2.0-flash-exp")
         self.model = genai.GenerativeModel("gemini-2.0-flash-exp")
 
     def extract_questions(self, page_data):
@@ -35,7 +37,8 @@ class Geminiparser:
                 except Exception as e:
                     print(f"Error processing page {e}")
 
-            return results
+            flat_results  = [q for q_list in results for q in q_list]
+            return flat_results
         
     def batch_remix_questions(self, questions, max_workers=15):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -49,4 +52,3 @@ class Geminiparser:
                     print(f"Error remixing question: {e}")
             
             return results
-                

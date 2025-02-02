@@ -1,76 +1,11 @@
 class Constants:
+    class Parsing:
+        #LATEX_BLACKLIST = [r"\documentclass{article}", r"\usepackage{amsmath}", r"\usepackage{amssymb}"]
+        LATEX_BLACKLIST = ["```latex", "```"]
+        TEX_TEMPLATE_PATH = "template.tex"
+        #TEMP_TEX = ""
+        TEMP_TEX = r"Find the radius of convergence of the following power series.$$\sum_{n=0}^{\infty} \frac{2\cdot 5 \cdot 8 \cdots (3n-1)}{n!3^n} x^{2n}$$(a) $\sqrt{3}$ (b) $\frac{1}{\sqrt{3}}$ (c) 1 (d) 0 (e) $\infty$"
+
     class Gemini:
-        EXTRACT_PROMPT = "Give me all the question in this paper in latex form (Particularly look for question numbers to differentiate between questions if applicable). Please spend extra time ensuring that any existing equations are correctly identified. Please include the question itself and any formulas if any. Do not provide any additional text in your response that is not in the paper"
-        REMIX_PROMPT = "Create a very similar question to the following. If equations are present, try to keep close to the original in order to not change the question too much. Provide the new question in full latex format. Please do not add any additional text to your output."
-        TEMP_QUESTION = """20. Find the radius of convergence of the following power series.
-∑
-𝑛
-=
-0
-∞
-(
-−
-1
-)
-𝑛
-1
-⋅
-4
-⋅
-7
-⋯
-(
-3
-𝑛
-−
-2
-)
-𝑛
-!
-3
-𝑛
-𝑥
-3
-𝑛
-n=0
-∑
-∞
-​
- (−1) 
-n
-  
-n!3 
-n
- 
-1⋅4⋅7⋯(3n−2)
-​
- x 
-3n
- 
-(a) 
-3
-3
-(b) 
-1
-3
-3
-(c) 
-1
-(d) 
-0
-(e) 
-∞
-(a)  
-3
-  
-3
-​
- (b)  
-3
-  
-3
-​
- 
-1
-​
- (c) 1(d) 0(e) ∞"""
+        EXTRACT_PROMPT = "In the document, extract all the questions into a readable format for gemini. Please ensure you maintain all mathematical symbols and logic if applicable. Replace the numeric number of each question with a 'Q:' and separate each question by a string marker ‘crodie’"
+        REMIX_PROMPT = """Instructions: Take the given question and remix it so that it is slightly different. If mathematics is involved, ensure that the overall structure is not heavily modified. If it is a MCQ question, replace the options with valid options for the question. Return only the LaTeX snippet in a single environment. Do not include any extra text or explanation outside the LaTeX snippet. Ensure that the latex document uses the correct symbols. Do not include documentclass or usepackage the response even if they are required. Do not use {verbatim} if there are math symbols in the response."""
