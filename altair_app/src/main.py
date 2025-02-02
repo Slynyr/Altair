@@ -38,6 +38,10 @@ if __name__ == "__main__":
     print(tex_str)
     
 
+    flat_questions = [q for q_list in extracted_questions for q in q_list]
+    print(len(flat_questions))
+    remixed_questions = m_geminiParser.batch_remix_questions(flat_questions, max_workers=3)
+
     app = QApplication(sys.argv)
     window = ThreeJsApp()
     window.show()
