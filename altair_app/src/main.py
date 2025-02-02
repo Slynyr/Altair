@@ -13,3 +13,5 @@ def __main__():
     m_geminiParser = Geminiparser()
 
     temp_data = temp_read("page-1.pdf")
+
+    q_list = m_geminiParser.extract_questions(temp_data)
