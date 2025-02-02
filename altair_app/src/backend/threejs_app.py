@@ -10,7 +10,6 @@ from backend.gen_worker import GenPaperWorker
 from PyQt6.QtCore import QThread
 from PyQt6.QtWebEngineCore import QWebEnginePage
 from PyQt6.QtCore import pyqtSignal, QUrl
-from backend.sound_handler import SoundHandler
 
 class MyWebEnginePage(QWebEnginePage):
     # Signal to emit when a file icon is clicked.
