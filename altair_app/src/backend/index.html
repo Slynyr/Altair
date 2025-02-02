@@ -1,153 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
     <title>Chaotic Orbital Particles</title>
     <script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js"></script>
-  </head>
-  <body style="margin: 0; overflow: hidden;">
+</head>
+
+<body style="margin: 0; overflow: hidden;">
     <script>
-      // ----------------------------
-      // Basic Three.js Setup
-      // ----------------------------
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-      );
-      camera.position.set(0, 0, 3);
+        // ----------------------------
+        // Basic Three.js Setup
+        // ----------------------------
 
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 0, 3);
 
-      // ----------------------------
-      // Create Instanced Spheres
-      // ----------------------------
-      const count = 5000;
+        scene.background = new THREE.Color(0x1e1e1e); // Sky blue
 
-      // A simple, flat color material.
-      const sphereGeometry = new THREE.SphereGeometry(1, 8, 8); // 8,8 for performance
-      const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x6A5ACD });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-      const instancedMesh = new THREE.InstancedMesh(
-        sphereGeometry,
-        sphereMaterial,
-        count
-      );
-      scene.add(instancedMesh);
+        // ----------------------------
+        // Create Instanced Spheres
+        // ----------------------------
+        const count = 5000;
 
-      // We'll store each particle's data:
-      // {
-      //   originalPos: THREE.Vector3,  // where it starts
-      //   orbitAxis: THREE.Vector3,    // random axis
-      //   orbitSpeed: number,          // how fast it orbits
-      //   scale: number,
-      //   timeOffset: number           // to offset start angle
-      // }
-      const particlesData = [];
-      const dummy = new THREE.Object3D();
+        // A simple, flat color material.
+        const sphereGeometry = new THREE.SphereGeometry(1, 8, 8); // 8,8 for performance
+        const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x6A5ACD });
 
-      // Helper to create a random unit vector (random axis).
-      function randomAxis() {
-        const ax = Math.random() * 2 - 1;
-        const ay = Math.random() * 2 - 1;
-        const az = Math.random() * 2 - 1;
-        const v = new THREE.Vector3(ax, ay, az);
-        v.normalize();
-        return v;
-      }
+        const instancedMesh = new THREE.InstancedMesh(
+            sphereGeometry,
+            sphereMaterial,
+            count
+        );
+        scene.add(instancedMesh);
 
-      for (let i = 0; i < count; i++) {
-        // Random spherical coordinates for the initial position
-        const theta = Math.random() * 2 * Math.PI;
-        const phi = Math.random() * Math.PI;
+        // We'll store each particle's data:
+        // {
+        //   originalPos: THREE.Vector3,  // where it starts
+        //   orbitAxis: THREE.Vector3,    // random axis
+        //   orbitSpeed: number,          // how fast it orbits
+        //   scale: number,
+        //   timeOffset: number           // to offset start angle
+        // }
+        const particlesData = [];
+        const dummy = new THREE.Object3D();
 
-        // Base radius plus a bit of random offset
-        const baseRadius = 0.8;
-        const extraRadius = Math.random() * 0.15;
-        const r = baseRadius + extraRadius;
-
-        // Convert spherical to cartesian
-        const x = r * Math.sin(phi) * Math.cos(theta);
-        const y = r * Math.sin(phi) * Math.sin(theta);
-        const z = r * Math.cos(phi);
-
-        const originalPos = new THREE.Vector3(x, y, z);
-
-        // Random orbit axis
-        const orbitAxis = randomAxis();
-
-        // Random orbit speed
-        const orbitSpeed = Math.random() * 1 + 0.5; // ~ [0.5..2.0]
-
-        // Each particle can have a random "phase" offset so they don't start at the same angle
-        const timeOffset = Math.random() * 1000;
-
-        // Random scale
-        const scale = Math.random() * 0.003 + 0.001;
-
-        particlesData.push({ originalPos, orbitAxis, orbitSpeed, scale, timeOffset });
-
-        // Initial dummy placement
-        dummy.position.copy(originalPos);
-        dummy.scale.set(scale, scale, scale);
-        dummy.updateMatrix();
-        instancedMesh.setMatrixAt(i, dummy.matrix);
-      }
-
-      // ----------------------------
-      // Animate
-      // ----------------------------
-      // We'll rotate each particle's original position around its orbitAxis by an
-      // angle = orbitSpeed * (time * 0.0005 + timeOffset).
-      const rotationQuat = new THREE.Quaternion(); // Reused each loop
-      function animate(time) {
-        requestAnimationFrame(animate);
+        // Helper to create a random unit vector (random axis).
+        function randomAxis() {
+            const ax = Math.random() * 2 - 1;
+            const ay = Math.random() * 2 - 1;
+            const az = Math.random() * 2 - 1;
+            const v = new THREE.Vector3(ax, ay, az);
+            v.normalize();
+            return v;
+        }
 
         for (let i = 0; i < count; i++) {
-          const data = particlesData[i];
-          const angle = data.orbitSpeed * (0.0005 * time + data.timeOffset);
+            // Random spherical coordinates for the initial position
+            const theta = Math.random() * 2 * Math.PI;
+            const phi = Math.random() * Math.PI;
 
-          // Create a quaternion that rotates around (orbitAxis) by (angle)
-          rotationQuat.setFromAxisAngle(data.orbitAxis, angle);
+            // Base radius plus a bit of random offset
+            const baseRadius = 0.8;
+            const extraRadius = Math.random() * 0.15;
+            const r = baseRadius + extraRadius;
 
-          // Apply that rotation to the original position
-          const rotatedPos = data.originalPos.clone().applyQuaternion(rotationQuat);
+            // Convert spherical to cartesian
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
 
-          // Apply position & scale to dummy object
-          dummy.position.copy(rotatedPos);
-          dummy.scale.set(data.scale, data.scale, data.scale);
+            const originalPos = new THREE.Vector3(x, y, z);
 
-          // Update matrix in the InstancedMesh
-          dummy.updateMatrix();
-          instancedMesh.setMatrixAt(i, dummy.matrix);
+            // Random orbit axis
+            const orbitAxis = randomAxis();
+
+            // Random orbit speed
+            const orbitSpeed = Math.random() * 1 + 0.5; // ~ [0.5..2.0]
+
+            // Each particle can have a random "phase" offset so they don't start at the same angle
+            const timeOffset = Math.random() * 1000;
+
+            // Random scale
+            const scale = Math.random() * 0.004 + 0.002;
+
+            particlesData.push({ originalPos, orbitAxis, orbitSpeed, scale, timeOffset });
+
+            // Initial dummy placement
+            dummy.position.copy(originalPos);
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            instancedMesh.setMatrixAt(i, dummy.matrix);
         }
 
-        instancedMesh.instanceMatrix.needsUpdate = true;
+        // Global speed multipliers:
+        let currentOrbitSpeed = 0.03; // the speed currently in effect
+        let targetOrbitSpeed = 0.03;  // the desired speed
 
-        renderer.render(scene, camera);
-      }
-      animate();
+        // ----------------------------
+        // Animate
+        // ----------------------------
+        // We'll rotate each particle's original position around its orbitAxis by an
+        // angle = orbitSpeed * (time * 0.0005 + timeOffset).
+        const rotationQuat = new THREE.Quaternion(); // Reused each loop
+        function animate(time) {
+            requestAnimationFrame(animate);
 
-      // ----------------------------
-      // Handle window resizing
-      // ----------------------------
-      window.addEventListener("resize", () => {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        renderer.setSize(width, height);
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-      });
+            // Interpolation factor:
+            let factor = 0.005;
 
-      function setOrbitSpeed(newSpeed) {
-        for (let i = 0; i < particlesData.length; i++) {
-            particlesData[i].orbitSpeed = newSpeed
+            // Optionally, if you want different rates for acceleration and deceleration,
+            // you can adjust factor based on whether you're speeding up or slowing down:
+            // let factor = (targetOrbitSpeed > currentOrbitSpeed) ? 0.01 : 0.05;
+
+            // Interpolate currentOrbitSpeed toward targetOrbitSpeed:
+            currentOrbitSpeed += (targetOrbitSpeed - currentOrbitSpeed) * factor;
+
+            // Update each particle using the currentOrbitSpeed:
+            for (let i = 0; i < count; i++) {
+                const data = particlesData[i];
+                const angle = data.orbitSpeed * currentOrbitSpeed * (0.05 * time + data.timeOffset);
+                rotationQuat.setFromAxisAngle(data.orbitAxis, angle);
+                const rotatedPos = data.originalPos.clone().applyQuaternion(rotationQuat);
+                dummy.position.copy(rotatedPos);
+                dummy.scale.set(data.scale, data.scale, data.scale);
+                dummy.updateMatrix();
+                instancedMesh.setMatrixAt(i, dummy.matrix);
+            }
+            instancedMesh.instanceMatrix.needsUpdate = true;
+            renderer.render(scene, camera);
         }
-      }
+        animate();
+
+        // ----------------------------
+        // Handle window resizing
+        // ----------------------------
+        window.addEventListener("resize", () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        });
+
+
+        function setOrbitSpeed(newSpeed) {
+            targetOrbitSpeed = newSpeed;
+            console.log(targetOrbitSpeed);
+        }
+
+        function setSphereSize(newSize) {
+
+        }
     </script>
-  </body>
+</body>
+
 </html>

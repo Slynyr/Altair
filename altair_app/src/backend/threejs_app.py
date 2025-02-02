@@ -89,9 +89,9 @@ class ThreeJsApp(QMainWindow):
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
-        self.worker.finished.connect(lambda: self.browser.page().runJavaScript("setOrbitSpeed(1);"))
+        self.worker.finished.connect(lambda: self.browser.page().runJavaScript("setOrbitSpeed(0.03);"))
 
         # Go!
         self.thread.start()
 
-        self.browser.page().runJavaScript("setOrbitSpeed(10);")
+        self.browser.page().runJavaScript("setOrbitSpeed(0.1);")
