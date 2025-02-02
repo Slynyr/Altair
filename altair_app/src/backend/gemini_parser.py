@@ -37,7 +37,8 @@ class Geminiparser:
                 except Exception as e:
                     print(f"Error processing page {e}")
 
-            return results
+            flat_results  = [q for q_list in results for q in q_list]
+            return flat_results
         
     def batch_remix_questions(self, questions, max_workers=15):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:

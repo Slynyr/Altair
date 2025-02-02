@@ -1,99 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbiting Particles Around a Sphere</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: black; }
-        canvas { display: block; }
-    </style>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chaotic Orbital Particles</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js"></script>
+  </head>
+  <body style="margin: 0; overflow: hidden;">
     <script>
-        // Scene setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+      // ----------------------------
+      // Basic Three.js Setup
+      // ----------------------------
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(0, 0, 3);
 
-        // Sphere properties
-        const numParticles = 1000;
-        const radius = 2;
-        const positions = [];
-        const speeds = [];
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
 
-        // Generate particles in a spherical orbit
-        for (let i = 0; i < numParticles; i++) {
-            let theta = Math.random() * Math.PI * 2;  // Longitude
-            let phi = Math.acos((Math.random() * 2) - 1); // Latitude
+      // ----------------------------
+      // Create Instanced Spheres
+      // ----------------------------
+      const count = 5000;
 
-            let x = radius * Math.sin(phi) * Math.cos(theta);
-            let y = radius * Math.sin(phi) * Math.sin(theta);
-            let z = radius * Math.cos(phi);
+      // A simple, flat color material.
+      const sphereGeometry = new THREE.SphereGeometry(1, 8, 8); // 8,8 for performance
+      const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x6A5ACD });
 
-            positions.push(x, y, z);
-            speeds.push((Math.random() - 0.5) * 0.01);  // Random orbit speed
+      const instancedMesh = new THREE.InstancedMesh(
+        sphereGeometry,
+        sphereMaterial,
+        count
+      );
+      scene.add(instancedMesh);
+
+      // We'll store each particle's data:
+      // {
+      //   originalPos: THREE.Vector3,  // where it starts
+      //   orbitAxis: THREE.Vector3,    // random axis
+      //   orbitSpeed: number,          // how fast it orbits
+      //   scale: number,
+      //   timeOffset: number           // to offset start angle
+      // }
+      const particlesData = [];
+      const dummy = new THREE.Object3D();
+
+      // Helper to create a random unit vector (random axis).
+      function randomAxis() {
+        const ax = Math.random() * 2 - 1;
+        const ay = Math.random() * 2 - 1;
+        const az = Math.random() * 2 - 1;
+        const v = new THREE.Vector3(ax, ay, az);
+        v.normalize();
+        return v;
+      }
+
+      for (let i = 0; i < count; i++) {
+        // Random spherical coordinates for the initial position
+        const theta = Math.random() * 2 * Math.PI;
+        const phi = Math.random() * Math.PI;
+
+        // Base radius plus a bit of random offset
+        const baseRadius = 0.8;
+        const extraRadius = Math.random() * 0.15;
+        const r = baseRadius + extraRadius;
+
+        // Convert spherical to cartesian
+        const x = r * Math.sin(phi) * Math.cos(theta);
+        const y = r * Math.sin(phi) * Math.sin(theta);
+        const z = r * Math.cos(phi);
+
+        const originalPos = new THREE.Vector3(x, y, z);
+
+        // Random orbit axis
+        const orbitAxis = randomAxis();
+
+        // Random orbit speed
+        const orbitSpeed = Math.random() * 1 + 0.5; // ~ [0.5..2.0]
+
+        // Each particle can have a random "phase" offset so they don't start at the same angle
+        const timeOffset = Math.random() * 1000;
+
+        // Random scale
+        const scale = Math.random() * 0.003 + 0.001;
+
+        particlesData.push({ originalPos, orbitAxis, orbitSpeed, scale, timeOffset });
+
+        // Initial dummy placement
+        dummy.position.copy(originalPos);
+        dummy.scale.set(scale, scale, scale);
+        dummy.updateMatrix();
+        instancedMesh.setMatrixAt(i, dummy.matrix);
+      }
+
+      // ----------------------------
+      // Animate
+      // ----------------------------
+      // We'll rotate each particle's original position around its orbitAxis by an
+      // angle = orbitSpeed * (time * 0.0005 + timeOffset).
+      const rotationQuat = new THREE.Quaternion(); // Reused each loop
+      function animate(time) {
+        requestAnimationFrame(animate);
+
+        for (let i = 0; i < count; i++) {
+          const data = particlesData[i];
+          const angle = data.orbitSpeed * (0.0005 * time + data.timeOffset);
+
+          // Create a quaternion that rotates around (orbitAxis) by (angle)
+          rotationQuat.setFromAxisAngle(data.orbitAxis, angle);
+
+          // Apply that rotation to the original position
+          const rotatedPos = data.originalPos.clone().applyQuaternion(rotationQuat);
+
+          // Apply position & scale to dummy object
+          dummy.position.copy(rotatedPos);
+          dummy.scale.set(data.scale, data.scale, data.scale);
+
+          // Update matrix in the InstancedMesh
+          dummy.updateMatrix();
+          instancedMesh.setMatrixAt(i, dummy.matrix);
         }
 
-        // Create particle geometry
-        const particleGeometry = new THREE.BufferGeometry();
-        const positionAttribute = new THREE.Float32BufferAttribute(positions, 3);
-        particleGeometry.setAttribute('position', positionAttribute);
+        instancedMesh.instanceMatrix.needsUpdate = true;
 
-        // Particle material
-        const particleMaterial = new THREE.PointsMaterial({
-            color: 0x00ff00,
-            size: 0.05
-        });
+        renderer.render(scene, camera);
+      }
+      animate();
 
-        // Create particle system
-        const particles = new THREE.Points(particleGeometry, particleMaterial);
-        scene.add(particles);
+      // ----------------------------
+      // Handle window resizing
+      // ----------------------------
+      window.addEventListener("resize", () => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        renderer.setSize(width, height);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      });
 
-        // Position camera
-        camera.position.z = 5;
-
-        // Animation loop
-        function animate(time) {
-            requestAnimationFrame(animate);
-
-            const pos = particleGeometry.attributes.position.array;
-
-            // Update each particle's position to orbit
-            for (let i = 0; i < pos.length; i += 3) {
-                let x = pos[i];
-                let y = pos[i + 1];
-                let z = pos[i + 2];
-
-                // Convert to spherical coordinates
-                let r = Math.sqrt(x * x + y * y + z * z);
-                let theta = Math.atan2(y, x);
-                let phi = Math.acos(z / r);
-
-                // Update angle for orbit motion
-                theta += speeds[i / 3];
-
-                // Convert back to Cartesian coordinates
-                pos[i] = r * Math.sin(phi) * Math.cos(theta);
-                pos[i + 1] = r * Math.sin(phi) * Math.sin(theta);
-                pos[i + 2] = r * Math.cos(phi);
-            }
-
-            particleGeometry.attributes.position.needsUpdate = true;
-            renderer.render(scene, camera);
+      function setOrbitSpeed(newSpeed) {
+        for (let i = 0; i < particlesData.length; i++) {
+            particlesData[i].orbitSpeed = newSpeed
         }
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-        });
-
-        animate();
+      }
     </script>
-</body>
+  </body>
 </html>
