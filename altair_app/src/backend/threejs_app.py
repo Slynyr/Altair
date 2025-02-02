@@ -1,15 +1,11 @@
-import sys
+from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QWebEngineView
+from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEnginePage
+from backend.gen_worker import GenPaperWorker
+from backend.gen_manager import GenManager
+from PyQt6.QtCore import pyqtSignal, QUrl, QThread, QUrl
 import os
 import json
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
-from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWebEngineCore import QWebEngineSettings
-from PyQt6.QtCore import QUrl
-from backend.gen_manager import GenManager
-from backend.gen_worker import GenPaperWorker
-from PyQt6.QtCore import QThread
-from PyQt6.QtWebEngineCore import QWebEnginePage
-from PyQt6.QtCore import pyqtSignal, QUrl
+
 
 class MyWebEnginePage(QWebEnginePage):
     # Signal to emit when a file icon is clicked.

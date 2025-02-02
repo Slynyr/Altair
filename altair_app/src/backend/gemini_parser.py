@@ -1,7 +1,7 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from backend.constants import Constants
 import google.generativeai as genai
 import os
-from backend.constants import Constants
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class Geminiparser:
     def __init__(self):
