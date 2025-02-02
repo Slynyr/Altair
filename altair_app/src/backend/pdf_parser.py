@@ -1,4 +1,5 @@
 """create a class that takes a pdf file and saves first page as a new pdf output"""
+import webbrowser
 import PyPDF2
 import io
 import base64
@@ -51,7 +52,7 @@ class PDFParser:
 
         return latex_text
     
-    def render_latex_to_PDF(self, latex_text, output_filename="output.pdf"):
+    def get_rendered_latex_to_PDF(self, latex_text, output_filename="output.pdf"):
         with open(Constants.Parsing.TEX_TEMPLATE_PATH, "r", encoding="utf-8") as f:
             template_content = f.read()
 
@@ -68,5 +69,10 @@ class PDFParser:
             with open(os.path.join(temp_dir, "document.pdf"), "rb") as f:
                 pdf_data = f.read()
 
-        with open(output_filename, "wb") as f:
-            f.write(pdf_data)
+        return pdf_data
+    
+    def render_pdf_to_browser(self, pdf_data):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_file.write(pdf_data)
+            tmp_file_path = tmp_file.name
+        webbrowser.open('file://' + tmp_file_path)

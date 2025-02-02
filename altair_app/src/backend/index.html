@@ -12,7 +12,6 @@
         // ----------------------------
         // Basic Three.js Setup
         // ----------------------------
-
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(
             75,
@@ -21,9 +20,7 @@
             1000
         );
         camera.position.set(0, 0, 3);
-
-        scene.background = new THREE.Color(0x1e1e1e); // Sky blue
-
+        scene.background = new THREE.Color(0x1e1e1e);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
@@ -32,30 +29,17 @@
         // Create Instanced Spheres
         // ----------------------------
         const count = 5000;
-
-        // A simple, flat color material.
-        const sphereGeometry = new THREE.SphereGeometry(1, 8, 8); // 8,8 for performance
+        const sphereGeometry = new THREE.SphereGeometry(1, 8, 8);
         const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x6A5ACD });
-
         const instancedMesh = new THREE.InstancedMesh(
             sphereGeometry,
             sphereMaterial,
             count
         );
         scene.add(instancedMesh);
-
-        // We'll store each particle's data:
-        // {
-        //   originalPos: THREE.Vector3,  // where it starts
-        //   orbitAxis: THREE.Vector3,    // random axis
-        //   orbitSpeed: number,          // how fast it orbits
-        //   scale: number,
-        //   timeOffset: number           // to offset start angle
-        // }
         const particlesData = [];
         const dummy = new THREE.Object3D();
 
-        // Helper to create a random unit vector (random axis).
         function randomAxis() {
             const ax = Math.random() * 2 - 1;
             const ay = Math.random() * 2 - 1;
@@ -66,67 +50,120 @@
         }
 
         for (let i = 0; i < count; i++) {
-            // Random spherical coordinates for the initial position
             const theta = Math.random() * 2 * Math.PI;
             const phi = Math.random() * Math.PI;
-
-            // Base radius plus a bit of random offset
             const baseRadius = 0.8;
             const extraRadius = Math.random() * 0.15;
             const r = baseRadius + extraRadius;
 
-            // Convert spherical to cartesian
             const x = r * Math.sin(phi) * Math.cos(theta);
             const y = r * Math.sin(phi) * Math.sin(theta);
             const z = r * Math.cos(phi);
 
             const originalPos = new THREE.Vector3(x, y, z);
-
-            // Random orbit axis
             const orbitAxis = randomAxis();
-
-            // Random orbit speed
-            const orbitSpeed = Math.random() * 1 + 0.5; // ~ [0.5..2.0]
-
-            // Each particle can have a random "phase" offset so they don't start at the same angle
+            const orbitSpeed = Math.random() * 1 + 0.5;
             const timeOffset = Math.random() * 1000;
-
-            // Random scale
             const scale = Math.random() * 0.004 + 0.002;
 
-            particlesData.push({ originalPos, orbitAxis, orbitSpeed, scale, timeOffset });
-
-            // Initial dummy placement
+            particlesData.push({
+                originalPos,
+                orbitAxis,
+                orbitSpeed,
+                scale,
+                timeOffset,
+            });
             dummy.position.copy(originalPos);
             dummy.scale.set(scale, scale, scale);
             dummy.updateMatrix();
             instancedMesh.setMatrixAt(i, dummy.matrix);
         }
 
-        // Global speed multipliers:
-        let currentOrbitSpeed = 0.03; // the speed currently in effect
-        let targetOrbitSpeed = 0.03;  // the desired speed
+        let currentOrbitSpeed = 0.03;
+        let targetOrbitSpeed = 0.03;
+
+        // ----------------------------
+        // File Icon (Sprite) Setup
+        // ----------------------------
+        // We maintain an array of file icons.
+        const fileIcons = [];
+
+        // addFileIcon creates a sprite that “floats” (or orbits)
+        // and stores its associated file path in userData.
+        function addFileIcon(index) {
+            const loader = new THREE.TextureLoader();
+            loader.load(
+                "file-icon.png",
+                function (texture) {
+                    const spriteMaterial = new THREE.SpriteMaterial({
+                        map: texture,
+                        color: 0xffffff,
+                    });
+                    const sprite = new THREE.Sprite(spriteMaterial);
+                    sprite.scale.set(0.2, 0.2, 1);
+                    // Save the file path with this sprite:
+                    sprite.userData.index = index;
+                    // Generate orbit parameters (you can customize these as needed):
+                    const orbitRadius = 1.5;
+                    const orbitSpeed = 0.1; // Faster orbit speed
+                    const angle = Math.random() * 2 * Math.PI;
+                    // Save both the sprite and its orbit parameters:
+                    fileIcons.push({ sprite, orbitRadius, orbitSpeed, angle });
+                    scene.add(sprite);
+                },
+                undefined,
+                function (err) {
+                    console.error("Error loading texture for file icon:", err);
+                }
+            );
+        }
+
+        // ----------------------------
+        // Click Detection using Raycaster
+        // ----------------------------
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function onDocumentMouseDown(event) {
+            event.preventDefault();
+            // Convert mouse coordinates to normalized device coordinates (-1 to +1)
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            // Test all file icon sprites
+            const sprites = fileIcons.map((obj) => obj.sprite);
+            const intersects = raycaster.intersectObjects(sprites);
+            if (intersects.length > 0) {
+                const clickedSprite = intersects[0].object;
+                const index = clickedSprite.userData.index;
+                // Instead of opening the file directly in JS,
+                // navigate to a custom URL (which Python will intercept).
+                window.location.href = "open:/" + encodeURIComponent(index);
+            }
+        }
+        renderer.domElement.addEventListener(
+            "mousedown",
+            onDocumentMouseDown,
+            false
+        );
 
         // ----------------------------
         // Animate
         // ----------------------------
-        // We'll rotate each particle's original position around its orbitAxis by an
-        // angle = orbitSpeed * (time * 0.0005 + timeOffset).
-        const rotationQuat = new THREE.Quaternion(); // Reused each loop
+        const rotationQuat = new THREE.Quaternion();
+        let prevTime = performance.now(); // Initialize with the current time
+
         function animate(time) {
             requestAnimationFrame(animate);
 
-            // Interpolation factor:
+            // Calculate delta time (convert to seconds if needed)
+            const deltaTime = (time - prevTime) / 1000; // deltaTime in seconds
+            prevTime = time;
+
+            // Update instanced mesh animations (if needed)
             let factor = 0.005;
-
-            // Optionally, if you want different rates for acceleration and deceleration,
-            // you can adjust factor based on whether you're speeding up or slowing down:
-            // let factor = (targetOrbitSpeed > currentOrbitSpeed) ? 0.01 : 0.05;
-
-            // Interpolate currentOrbitSpeed toward targetOrbitSpeed:
             currentOrbitSpeed += (targetOrbitSpeed - currentOrbitSpeed) * factor;
 
-            // Update each particle using the currentOrbitSpeed:
             for (let i = 0; i < count; i++) {
                 const data = particlesData[i];
                 const angle = data.orbitSpeed * currentOrbitSpeed * (0.05 * time + data.timeOffset);
@@ -138,6 +175,16 @@
                 instancedMesh.setMatrixAt(i, dummy.matrix);
             }
             instancedMesh.instanceMatrix.needsUpdate = true;
+
+            // Update the position of each file icon using deltaTime
+            fileIcons.forEach((iconObj) => {
+                // Instead of using `time`, use deltaTime to update the angle:
+                iconObj.angle += iconObj.orbitSpeed * deltaTime;
+                iconObj.sprite.position.x = Math.cos(iconObj.angle) * iconObj.orbitRadius;
+                iconObj.sprite.position.y = Math.sin(iconObj.angle) * iconObj.orbitRadius;
+                iconObj.sprite.position.z = Math.sin(iconObj.angle * 0.5) * 0.5;
+            });
+
             renderer.render(scene, camera);
         }
         animate();
@@ -153,15 +200,17 @@
             camera.updateProjectionMatrix();
         });
 
-
+        // ----------------------------
+        // External Controls
+        // ----------------------------
         function setOrbitSpeed(newSpeed) {
             targetOrbitSpeed = newSpeed;
-            console.log(targetOrbitSpeed);
+            console.log("Orbit speed set to:", targetOrbitSpeed);
         }
 
-        function setSphereSize(newSize) {
-
-        }
+        // Expose functions so Python can call them.
+        window.addFileIcon = addFileIcon;
+        window.setOrbitSpeed = setOrbitSpeed;
     </script>
 </body>
 

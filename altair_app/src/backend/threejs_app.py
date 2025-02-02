@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEngineSettings
@@ -7,6 +8,21 @@ from PyQt6.QtCore import QUrl
 from backend.gen_manager import GenManager
 from backend.gen_worker import GenPaperWorker
 from PyQt6.QtCore import QThread
+from PyQt6.QtWebEngineCore import QWebEnginePage
+from PyQt6.QtCore import pyqtSignal, QUrl
+
+class MyWebEnginePage(QWebEnginePage):
+    # Signal to emit when a file icon is clicked.
+    fileIconClicked = pyqtSignal(str)
+
+    def acceptNavigationRequest(self, url, _type, isMainFrame):
+        if url.scheme() == 'open':
+            # url.path() will return a string like "/0"
+            index_str = url.path()[1:]  # Remove the leading slash
+            print("File icon clicked, index:", index_str)
+            self.fileIconClicked.emit(index_str)
+            return False  # Prevent the navigation from occurring.
+        return super().acceptNavigationRequest(url, _type, isMainFrame)
 
 class NoDragWebEngineView(QWebEngineView):
     """QWebEngineView subclass that ignores drag events to let the parent handle them."""
@@ -19,27 +35,29 @@ class NoDragWebEngineView(QWebEngineView):
 
     def dropEvent(self, event):
         event.ignore()
+    
 
 class ThreeJsApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.m_GenManager = GenManager()
-
         self.setWindowTitle("PyQt with Three.js")
         self.setGeometry(100, 100, 1024, 768)
-
-        # Let the main window accept drops
         self.setAcceptDrops(True)
 
-        # Prepare the web view (NoDrag subclass)
+        # Prepare the web view.
         self.browser = NoDragWebEngineView()
+        # Use our custom page.
+        page = MyWebEnginePage(self.browser)
+        # Connect the signal to your handler method.
+        page.fileIconClicked.connect(self.handleFileIconClicked)
+        self.browser.setPage(page)
 
-        # Point to your local "index.html"
+        # Load your local index.html file.
         base_dir = os.path.dirname(os.path.abspath(__file__))
         html_file = os.path.join(base_dir, "index.html")
         self.browser.setUrl(QUrl.fromLocalFile(html_file))
 
-        # Enable JavaScript, etc.
         self.browser.settings().setAttribute(
             QWebEngineSettings.WebAttribute.JavascriptEnabled, True
         )
@@ -47,11 +65,14 @@ class ThreeJsApp(QMainWindow):
             QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
         )
 
-        # Layout
         central_widget = QWidget()
         layout = QVBoxLayout(central_widget)
         layout.addWidget(self.browser)
         self.setCentralWidget(central_widget)
+
+    def handleFileIconClicked(self, index):
+        print("Previewing Paper")
+        self.m_GenManager.preview_paper(int(index))
 
     def dragEnterEvent(self, event):
         """Accept file drags if they contain URLs (file paths)."""
@@ -75,23 +96,28 @@ class ThreeJsApp(QMainWindow):
     def on_file_dropped(self, file_path):
         print("Dropped file:", file_path)
 
-        # Create Worker
+        # Create Worker (your existing code)
         self.worker = GenPaperWorker(self.m_GenManager, file_path)
         self.thread = QThread()
-
-        # Move worker to that thread
         self.worker.moveToThread(self.thread)
-
-        # Thread starts => call worker.run
         self.thread.started.connect(self.worker.run)
-
-        # Worker finishes => clean up
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
-        self.worker.finished.connect(lambda: self.browser.page().runJavaScript("setOrbitSpeed(0.03);"))
 
-        # Go!
+        # After the worker finishes, call JavaScript to add the file icon.
+        # (Also adjust the orbit speed if desired.)
+        self.worker.finished.connect(
+            lambda: self.browser.page().runJavaScript("setOrbitSpeed(0.03);")
+        )
+        # Use json.dumps to properly encode the file_path string.
+        self.worker.finished.connect(
+            lambda: self.browser.page().runJavaScript(
+                "addFileIcon(" + json.dumps(self.m_GenManager.get_latest_index()) + ");"
+            )
+        )
+
         self.thread.start()
 
+        # Optionally, change the orbit speed while the file is processing.
         self.browser.page().runJavaScript("setOrbitSpeed(0.1);")
