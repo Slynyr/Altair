@@ -35,7 +35,6 @@ class NoDragWebEngineView(QWebEngineView):
         event.ignore()
     
 
-
 class ThreeJsApp(QMainWindow):
     def __init__(self):
         super().__init__()
