@@ -10,6 +10,7 @@ from backend.gen_worker import GenPaperWorker
 from PyQt6.QtCore import QThread
 from PyQt6.QtWebEngineCore import QWebEnginePage
 from PyQt6.QtCore import pyqtSignal, QUrl
+from backend.sound_handler import SoundHandler
 
 class MyWebEnginePage(QWebEnginePage):
     # Signal to emit when a file icon is clicked.
@@ -77,6 +78,7 @@ class ThreeJsApp(QMainWindow):
     def dragEnterEvent(self, event):
         """Accept file drags if they contain URLs (file paths)."""
         print("dragEnterEvent on main window")
+        print(self.m_GenManager.get_latest_index())
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
         else:
@@ -107,9 +109,8 @@ class ThreeJsApp(QMainWindow):
 
         # After the worker finishes, call JavaScript to add the file icon.
         # (Also adjust the orbit speed if desired.)
-        self.worker.finished.connect(
-            lambda: self.browser.page().runJavaScript("setOrbitSpeed(0.03);")
-        )
+        self.worker.finished.connect(lambda: self.browser.page().runJavaScript("setOrbitSpeed(0.03);"))
+        #self.worker.finished.connect(lambda: SoundHandler.ding())
         # Use json.dumps to properly encode the file_path string.
         self.worker.finished.connect(
             lambda: self.browser.page().runJavaScript(
