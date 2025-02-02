@@ -2,6 +2,12 @@
 import PyPDF2
 import io
 import base64
+import re
+import tempfile
+import subprocess
+import os 
+from backend.constants import Constants
+from pylatex import Document
 
 class PDFParser:
     def __init__(self):
@@ -31,18 +37,36 @@ class PDFParser:
                 output_data.append(base64_encoded)
         return output_data
 
-    def save_first_page(self, input_pdf):
-        with open(input_pdf, 'rb') as pdf_file:
-            reader = PyPDF2.PdfReader(pdf_file)
-            writer = PyPDF2.PdfWriter()
+    def build_tex_str(self, remixed_questions):
+        output = ""
+        for question in remixed_questions:
+            output += f"{question}\n"
 
-            if len(reader.pages) == 0:
-                print("PDF is empty")
-                return
+        return output
 
-            first_page = reader.pages[0]
-            writer.add_page(first_page)
+    def clean_latex(self, latex_text):
+        #TODO: TUNE CLEANING
+        pattern = "|".join(map(re.escape, Constants.Parsing.LATEX_BLACKLIST))
+        latex_text = re.sub(pattern, "", latex_text)
 
-            with open("out.pdf", 'wb') as output_file:
-                writer.write(output_file)
-        return first_page
+        return latex_text
+    
+    def render_latex_to_PDF(self, latex_text, output_filename="output.pdf"):
+        with open(Constants.Parsing.TEX_TEMPLATE_PATH, "r", encoding="utf-8") as f:
+            template_content = f.read()
+
+        processed_latex = template_content.replace("<<<CONTENT>>>", latex_text)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tex_path = os.path.join(temp_dir, "document.tex")
+
+            with open(tex_path, "w", encoding="utf-8") as f:
+                f.write(processed_latex)
+
+            subprocess.run(["pdflatex", "-interaction=nonstopmode", "-output-directory", temp_dir, tex_path], check=True)
+
+            with open(os.path.join(temp_dir, "document.pdf"), "rb") as f:
+                pdf_data = f.read()
+
+        with open(output_filename, "wb") as f:
+            f.write(pdf_data)

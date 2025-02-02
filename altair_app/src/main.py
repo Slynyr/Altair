@@ -23,15 +23,20 @@ if __name__ == "__main__":
     m_geminiParser = Geminiparser()
     m_PDFParser = PDFParser()
 
-    page_data = m_PDFParser.get_page_data("full-test.pdf")
+    #m_PDFParser.render_latex_to_PDF(Constants.Parsing.TEMP_TEX)
+    #exit()
 
-    extracted_questions = m_geminiParser.batch_extracted_questions(page_data, max_workers=3)
+    page_data = m_PDFParser.get_page_data("page1-5.pdf")
+
+    extracted_questions = m_geminiParser.batch_extracted_questions(page_data, max_workers=20)
     print(len(extracted_questions))
-    remixed_questions = m_geminiParser.batch_remix_questions(extracted_questions, max_workers=3)
+    remixed_questions = m_geminiParser.batch_remix_questions(extracted_questions, max_workers=20)
 
-    for i in remixed_questions:
-        print("========")
-        print(i)
+    tex_str = m_PDFParser.build_tex_str(remixed_questions)
+    m_PDFParser.render_latex_to_PDF(tex_str)
+
+    print(tex_str)
+    
 
     app = QApplication(sys.argv)
     window = ThreeJsApp()
