@@ -9,6 +9,9 @@ class Geminiparser:
 
     def extract_questions(self, page_data):
         response = self.model.generate_content([{'mime_type': 'application/pdf', 'data': page_data}, Constants.Gemini.EXTRACT_PROMPT])
+        q_list = response.text.split("crodie")
+        
+        return q_list
 
     def remix_questions(self, question):
         response = self.model.generate_content([
