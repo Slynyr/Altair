@@ -10,4 +10,4 @@ class Geminiparser:
         pass
 
     def remix_questions(self, question):
-        pass
+        response = self.model.generate_content([{'mime_type': 'text/plain', 'data': question}, Constants.Gemini.REMIX_PROMPT])
