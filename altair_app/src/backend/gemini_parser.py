@@ -6,6 +6,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 class Geminiparser:
     def __init__(self):
         genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+        print(os.getenv("GOOGLE_API_KEY"))
+        #self.model = genai.GenerativeModel("gemini-2.0-flash-exp")
         self.model = genai.GenerativeModel("gemini-2.0-flash-exp")
 
     def extract_questions(self, page_data):
