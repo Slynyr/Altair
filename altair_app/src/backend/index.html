@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animated Sine Wave</title>
+    <title>Orbiting Particles Around a Sphere</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; }
@@ -19,51 +19,67 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Grid properties
-        const rows = 50, cols = 50; 
-        const spacing = 0.2;
-        const amplitude = 0.2;
-        const frequency = 4;
-
-        // Particle geometry
-        const particleGeometry = new THREE.BufferGeometry();
+        // Sphere properties
+        const numParticles = 1000;
+        const radius = 2;
         const positions = [];
+        const speeds = [];
 
-        // Create grid of points
-        for (let x = -cols / 2; x < cols / 2; x++) {
-            for (let z = -rows / 2; z < rows / 2; z++) {
-                positions.push(x * spacing, 0, z * spacing);
-            }
+        // Generate particles in a spherical orbit
+        for (let i = 0; i < numParticles; i++) {
+            let theta = Math.random() * Math.PI * 2;  // Longitude
+            let phi = Math.acos((Math.random() * 2) - 1); // Latitude
+
+            let x = radius * Math.sin(phi) * Math.cos(theta);
+            let y = radius * Math.sin(phi) * Math.sin(theta);
+            let z = radius * Math.cos(phi);
+
+            positions.push(x, y, z);
+            speeds.push((Math.random() - 0.5) * 0.01);  // Random orbit speed
         }
 
+        // Create particle geometry
+        const particleGeometry = new THREE.BufferGeometry();
         const positionAttribute = new THREE.Float32BufferAttribute(positions, 3);
         particleGeometry.setAttribute('position', positionAttribute);
 
         // Particle material
         const particleMaterial = new THREE.PointsMaterial({
-            color: 0x7821a3,
-            size: 0.01
+            color: 0x00ff00,
+            size: 0.05
         });
 
         // Create particle system
-        const particleWave = new THREE.Points(particleGeometry, particleMaterial);
-        scene.add(particleWave);
+        const particles = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particles);
 
         // Position camera
-        camera.position.set(0, 3, 5);
-        camera.lookAt(0, 0, 0);
+        camera.position.z = 5;
 
         // Animation loop
         function animate(time) {
             requestAnimationFrame(animate);
 
-            const positions = particleGeometry.attributes.position.array;
+            const pos = particleGeometry.attributes.position.array;
 
-            // Apply sine wave animation
-            for (let i = 0; i < positions.length; i += 3) {
-                let x = positions[i];
-                let z = positions[i + 2];
-                positions[i + 1] = amplitude * Math.sin(frequency * (x + z) + time * 0.002);
+            // Update each particle's position to orbit
+            for (let i = 0; i < pos.length; i += 3) {
+                let x = pos[i];
+                let y = pos[i + 1];
+                let z = pos[i + 2];
+
+                // Convert to spherical coordinates
+                let r = Math.sqrt(x * x + y * y + z * z);
+                let theta = Math.atan2(y, x);
+                let phi = Math.acos(z / r);
+
+                // Update angle for orbit motion
+                theta += speeds[i / 3];
+
+                // Convert back to Cartesian coordinates
+                pos[i] = r * Math.sin(phi) * Math.cos(theta);
+                pos[i + 1] = r * Math.sin(phi) * Math.sin(theta);
+                pos[i + 2] = r * Math.cos(phi);
             }
 
             particleGeometry.attributes.position.needsUpdate = true;
