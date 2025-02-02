@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js in PyQt</title>
+    <title>Animated Sine Wave</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: red;}
+        body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
     </style>
 </head>
@@ -16,26 +16,66 @@
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
-        
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Create a cube
-        const geometry = new THREE.BoxGeometry();
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
+        // Grid properties
+        const rows = 50, cols = 50; 
+        const spacing = 0.2;
+        const amplitude = 0.2;
+        const frequency = 4;
+
+        // Particle geometry
+        const particleGeometry = new THREE.BufferGeometry();
+        const positions = [];
+
+        // Create grid of points
+        for (let x = -cols / 2; x < cols / 2; x++) {
+            for (let z = -rows / 2; z < rows / 2; z++) {
+                positions.push(x * spacing, 0, z * spacing);
+            }
+        }
+
+        const positionAttribute = new THREE.Float32BufferAttribute(positions, 3);
+        particleGeometry.setAttribute('position', positionAttribute);
+
+        // Particle material
+        const particleMaterial = new THREE.PointsMaterial({
+            color: 0x7821a3,
+            size: 0.01
+        });
+
+        // Create particle system
+        const particleWave = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particleWave);
 
         // Position camera
-        camera.position.z = 5;
+        camera.position.set(0, 3, 5);
+        camera.lookAt(0, 0, 0);
 
         // Animation loop
-        function animate() {
+        function animate(time) {
             requestAnimationFrame(animate);
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
+
+            const positions = particleGeometry.attributes.position.array;
+
+            // Apply sine wave animation
+            for (let i = 0; i < positions.length; i += 3) {
+                let x = positions[i];
+                let z = positions[i + 2];
+                positions[i + 1] = amplitude * Math.sin(frequency * (x + z) + time * 0.002);
+            }
+
+            particleGeometry.attributes.position.needsUpdate = true;
             renderer.render(scene, camera);
         }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
 
         animate();
     </script>
