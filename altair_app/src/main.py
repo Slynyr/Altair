@@ -6,7 +6,7 @@ import base64
 import sys
 from PyQt6.QtWidgets import QApplication
 from backend.threejs_app import ThreeJsApp
-
+import pyperclip
 
 def temp_read(file_path):
     with open(file_path, "rb") as doc_file:
@@ -18,16 +18,24 @@ def temp_read(file_path):
 load_dotenv()
 
 if __name__ == "__main__":
+    print("Im happening")
+
+    m_geminiParser = Geminiparser()
+    m_PDFParser = PDFParser()
+
+    page_data = m_PDFParser.get_page_data("full-test.pdf")
+
+    extracted_questions = m_geminiParser.batch_extracted_questions(page_data, max_workers=3)
+    print(len(extracted_questions))
+    remixed_questions = m_geminiParser.batch_remix_questions(extracted_questions, max_workers=3)
+
+    for i in remixed_questions:
+        print("========")
+        print(i)
+
     app = QApplication(sys.argv)
     window = ThreeJsApp()
     window.show()
     sys.exit(app.exec())
 
-    m_geminiParser = Geminiparser()
-    m_PDFParser = PDFParser()
-
-    temp_data = m_PDFParser.get_page_data("full-test.pdf")
-
-    extracted_question = m_geminiParser.extract_questions(temp_data[4])[0]
-    print(m_geminiParser.remix_questions(extracted_question))
     
