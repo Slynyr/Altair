@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtWebEngineCore import QWebEngineSettings
 from PyQt6.QtCore import QUrl, Qt
 import os
 import sys
@@ -19,6 +20,10 @@ class ThreeJsApp(QMainWindow):
         # Create the browser widget and set URL to the local HTML file
         self.browser = QWebEngineView()
         self.browser.setUrl(QUrl.fromLocalFile(html_file))  
+
+        # Explicitly enables JavaScript
+        self.browser.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+        self.browser.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
 
         # Set up layout
         central_widget = QWidget()
