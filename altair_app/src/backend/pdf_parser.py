@@ -19,6 +19,7 @@ class PDFProcessor:
 
             with open("out.pdf", 'wb') as output_file:
                 writer.write(output_file)
+        return first_page
 
 # Usage example
 testing = PDFProcessor()
