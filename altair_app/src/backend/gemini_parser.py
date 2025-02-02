@@ -1,6 +1,6 @@
 import google.generativeai as genai
 import os
-from constants import Constants
+from backend.constants import Constants
 
 class Geminiparser:
     def __init__(self):
