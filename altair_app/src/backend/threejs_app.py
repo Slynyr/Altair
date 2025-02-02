@@ -1,8 +1,10 @@
-from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QWebEngineView
+from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEnginePage
+from PyQt6.QtWebEngineWidgets import QWebEngineView
 from backend.gen_worker import GenPaperWorker
 from backend.gen_manager import GenManager
 from PyQt6.QtCore import pyqtSignal, QUrl, QThread, QUrl
+import sys
 import os
 import json
 
@@ -33,6 +35,7 @@ class NoDragWebEngineView(QWebEngineView):
         event.ignore()
     
 
+
 class ThreeJsApp(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -43,28 +46,43 @@ class ThreeJsApp(QMainWindow):
 
         # Prepare the web view.
         self.browser = NoDragWebEngineView()
-        # Use our custom page.
         page = MyWebEnginePage(self.browser)
-        # Connect the signal to your handler method.
         page.fileIconClicked.connect(self.handleFileIconClicked)
         self.browser.setPage(page)
 
-        # Load your local index.html file.
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        html_file = os.path.join(base_dir, "index.html")
-        self.browser.setUrl(QUrl.fromLocalFile(html_file))
+        # Resolve base path
+        if getattr(sys, 'frozen', False):  # Running as an .exe
+            base_dir = sys._MEIPASS
+        else:  # Running as a script
+            base_dir = os.path.dirname(os.path.abspath(__file__))
 
-        self.browser.settings().setAttribute(
-            QWebEngineSettings.WebAttribute.JavascriptEnabled, True
-        )
-        self.browser.settings().setAttribute(
-            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
-        )
+        # Load index.html
+        html_file = os.path.join(base_dir, "backend", "index.html")
+        print(f"Loading HTML file from: {html_file}")
+
+        # Load texture file and convert it into a proper `file://` URL
+        texture_file = os.path.join(base_dir, "assets", "file-icon.png")
+        texture_url = QUrl.fromLocalFile(texture_file).toString()
+
+        print(f"Image Path: {texture_url}")  # Debugging check
+
+        # Inject texture_url into the HTML via JavaScript
+        self.browser.setUrl(QUrl.fromLocalFile(html_file))
+        self.browser.loadFinished.connect(lambda: self.inject_image_url(texture_url))
+
+        self.browser.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+        self.browser.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
 
         central_widget = QWidget()
         layout = QVBoxLayout(central_widget)
         layout.addWidget(self.browser)
         self.setCentralWidget(central_widget)
+
+    def inject_image_url(self, texture_url):
+        """Inject the correct image path into JavaScript."""
+        js_code = f"window.textureUrl = '{texture_url}';"
+        print("Injecting image path:", js_code)  # Debugging check
+        self.browser.page().runJavaScript(js_code)
 
     def handleFileIconClicked(self, index):
         print("Previewing Paper")
