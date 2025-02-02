@@ -93,7 +93,7 @@
         function addFileIcon(index) {
             const loader = new THREE.TextureLoader();
             loader.load(
-                "file-icon.png",
+                window.textureUrl,  // Use the injected texture URL
                 function (texture) {
                     const spriteMaterial = new THREE.SpriteMaterial({
                         map: texture,
@@ -101,13 +101,10 @@
                     });
                     const sprite = new THREE.Sprite(spriteMaterial);
                     sprite.scale.set(0.2, 0.2, 1);
-                    // Save the file path with this sprite:
                     sprite.userData.index = index;
-                    // Generate orbit parameters (you can customize these as needed):
                     const orbitRadius = 1.5;
-                    const orbitSpeed = 0.1; // Faster orbit speed
+                    const orbitSpeed = 0.1;
                     const angle = Math.random() * 2 * Math.PI;
-                    // Save both the sprite and its orbit parameters:
                     fileIcons.push({ sprite, orbitRadius, orbitSpeed, angle });
                     scene.add(sprite);
                 },

@@ -1,4 +1,4 @@
-"""create a class that takes a pdf file and saves first page as a new pdf output"""
+from backend.constants import Constants
 import webbrowser
 import PyPDF2
 import io
@@ -7,8 +7,6 @@ import re
 import tempfile
 import subprocess
 import os 
-from backend.constants import Constants
-from pylatex import Document
 
 class PDFParser:
     def __init__(self):
