@@ -1,5 +1,8 @@
 from backend.gemini_parser import Geminiparser
+from dotenv import load_dotenv
+from backend.constants import Constants
 import base64
+
 
 def temp_read(file_path):
     with open(file_path, "rb") as doc_file:
@@ -8,8 +11,14 @@ def temp_read(file_path):
     return doc_data
 
 
+load_dotenv()
 
 def __main__():
     m_geminiParser = Geminiparser()
 
-    temp_data = temp_read("page-1.pdf")
+    temp_data = temp_read("page-5.pdf")
+
+    print(m_geminiParser.remix_questions(Constants.Gemini.TEMP_QUESTION))
+
+__main__()
+    

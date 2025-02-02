@@ -11,4 +11,9 @@ class Geminiparser:
         response = self.model.generate_content([{'mime_type': 'application/pdf', 'data': page_data}, Constants.Gemini.EXTRACT_PROMPT])
 
     def remix_questions(self, question):
-        response = self.model.generate_content([{'mime_type': 'text/plain', 'data': question}, Constants.Gemini.REMIX_PROMPT])
+        response = self.model.generate_content([
+            {"role": "user", "parts": [{"text": f"{Constants.Gemini.REMIX_PROMPT}\n\n{question}"}]}
+        ])
+
+
+        return response.text
