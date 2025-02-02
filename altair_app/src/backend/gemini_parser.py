@@ -49,4 +49,3 @@ class Geminiparser:
                     print(f"Error remixing question: {e}")
             
             return results
-                

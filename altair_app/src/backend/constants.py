@@ -1,6 +1,6 @@
 class Constants:
     class Gemini:
-        EXTRACT_PROMPT = "Give me all the question in this paper in latex form (Particularly look for question numbers to differentiate between questions if applicable). Please spend extra time ensuring that any existing equations are correctly identified. Please include the question itself and any formulas if any. Do not provide any additional text in your response that is not in the paper"
+        EXTRACT_PROMPT = "Give me all the question in this paper in latex form. Please spend extra time ensuring that any existing equations are correctly identified. Please include the question itself and any formulas if any. Do not provide any additional text in your response that is not in the paper. After you are done rendering, without changing the format (especially indentation), add a string marker 'crodie' to separate each question."
         REMIX_PROMPT = "Create a very similar question to the following. If equations are present, try to keep close to the original in order to not change the question too much. Provide the new question in full latex format. Please do not add any additional text to your output."
         TEMP_QUESTION = """20. Find the radius of convergence of the following power series.
 ∑
